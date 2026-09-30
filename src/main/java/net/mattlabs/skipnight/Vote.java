@@ -4,6 +4,7 @@ import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
+import net.mattlabs.skipnight.util.AfkProvider;
 import net.mattlabs.skipnight.util.FastForward;
 import net.mattlabs.skipnight.util.Versions;
 import net.mattlabs.skipnight.util.VoteType;
@@ -67,6 +68,7 @@ public class Vote implements Listener {
     private FastForward fastForward;
     private ScheduledTask bossBarFastForwardTask;
     private final Messages messages;
+    private final AfkProvider afkProvider;
     private final BukkitAudiences platform;
     private final String version;
     private final boolean playerActivity;
@@ -79,6 +81,7 @@ public class Vote implements Listener {
         platform = SkipNight.getInstance().getPlatform();
         version = SkipNight.getInstance().getVersion();
         playerActivity = SkipNight.getInstance().hasPlayerActivity();
+        afkProvider = SkipNight.getInstance().getAfkProvider();
         config = SkipNight.getInstance().getConfiguration();
     }
 
@@ -416,11 +419,12 @@ public class Vote implements Listener {
                 // --- Fan-out side: only reads this player's own state, safe here. ---
                 boolean hasPermission = player.hasPermission("skipnight.vote." + voteTypeCommandString(voteType));
                 boolean inOverworld = isInOverworld(player);
+                boolean afk = afkProvider.isAfk(player);
                 String tag = hasPermission && inOverworld ? readTag(player) : null;
 
                 // Hand the report back to the global region thread to fold into shared state.
                 Bukkit.getGlobalRegionScheduler().run(plugin, globalTask -> {
-                    applyPlayerReport(player, hasPermission, inOverworld, tag, extraMessage);
+                    applyPlayerReport(player, hasPermission, inOverworld, afk, tag, extraMessage);
                     if (pending.decrementAndGet() == 0) {
                         finishUpdateAll(onComplete);
                     }
@@ -451,14 +455,14 @@ public class Vote implements Listener {
      * Must only be called from the global region thread.
      */
     private void applyPlayerReport(Player player, boolean hasPermission, boolean inOverworld,
-                                    String tag, Component extraMessage) {
+                                    boolean afk, String tag, Component extraMessage) {
         if (!hasPermission || voters == null) return;
 
         Voter voter = new Voter(player.getUniqueId());
         List<Component> messageList = new ArrayList<>();
         boolean showBossBar = false;
 
-        if (inOverworld) {
+        if (inOverworld && !afk) {
             showBossBar = true;
 
             if (!voters.containsKey(voter.getUuid())) {
@@ -479,7 +483,7 @@ public class Vote implements Listener {
                             if (voter.isIdle() || voter.isAway())
                                 messageList.add(messages.duringVote().back());
                             if (voter.getVote() == 0)
-                                messageList.add(messages.duringVote().voteButtons(voteTypeString()));
+                                messageList.add(messages.duringVote().voteButtons(voteTypeString(), voteTypeCommandString(voteType)));
                             voter.setActive();
                         }
                     }
@@ -514,8 +518,14 @@ public class Vote implements Listener {
             if (extraMessage != null) messageList.add(extraMessage);
         }
         else {
+            // Covers both leaving the overworld and going AFK via EssentialsX -
+            // in both cases the player is dropped from voters entirely, so they
+            // no longer count toward playerCount (the vote's denominator) and
+            // any vote they had already cast is discarded. If they come back
+            // (return to the overworld / stop being AFK), the branch above
+            // re-adds them as if they were joining the vote fresh.
             if (voters.containsKey(voter.getUuid())) {
-                messageList.add(messages.duringVote().leftWorld());
+                messageList.add(afk ? messages.duringVote().afk() : messages.duringVote().leftWorld());
                 voters.remove(voter.getUuid());
             }
         }

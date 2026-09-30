@@ -52,6 +52,11 @@
             <id>viaversion-repo</id>
             <url>https://repo.viaversion.com</url>
         </repository>
+        <!-- For EssentialsX API (AFK detection) -->
+        <repository>
+            <id>essentialsx</id>
+            <url>https://repo.essentialsx.net/releases/</url>
+        </repository>
     </repositories>
     <dependencies>
         <!-- For Paper API -->
@@ -137,6 +142,18 @@
             <artifactId>cloud-minecraft-extras</artifactId>
             <version>2.0.0-beta.15</version>
         </dependency>
+        <!-- For EssentialsX AFK detection. provided: must NOT be shaded into our jar -
+             we only need this to compile against IUser#isAfk(), the actual plugin
+             instance is looked up at runtime (see AfkProvider). -->
+        <!-- The Essentials-Folia fork (Euphillya) has no working Maven artifact (JitPack
+             can't build it), but its IEssentials/IUser API matches upstream EssentialsX,
+             so we compile against upstream and run against the Folia fork. -->
+        <dependency>
+            <groupId>net.essentialsx</groupId>
+            <artifactId>EssentialsX</artifactId>
+            <version>2.21.2</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <pluginRepositories>
@@ -184,8 +201,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>15</source>
-                    <target>15</target>
+                    <source>21</source>
+                    <target>21</target>
                     <encoding>${project.build.sourceEncoding}</encoding>
                     <compilerArgs>
                         <arg>-parameters</arg>

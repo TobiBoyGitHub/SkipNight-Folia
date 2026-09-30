@@ -5,6 +5,7 @@ import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.mattlabs.skipnight.commands.SkipDayCommand;
 import net.mattlabs.skipnight.commands.SkipNightCommand;
 import net.mattlabs.skipnight.util.ConfigurateManager;
+import net.mattlabs.skipnight.util.AfkProvider;
 import net.mattlabs.skipnight.util.MessageTransformations;
 import net.mattlabs.skipnight.util.Versions;
 import org.bstats.bukkit.Metrics;
@@ -32,6 +33,7 @@ public class SkipNight extends JavaPlugin {
     private static SkipNight instance;
     private BukkitAudiences platform;
     private String version;
+    private AfkProvider afkProvider;
 
     public static boolean testEnabled = false;
 
@@ -84,6 +86,10 @@ public class SkipNight extends JavaPlugin {
         // Register Audience (Messages)
         platform = BukkitAudiences.create(this);
 
+        // EssentialsX Integration (AFK exclusion from votes) - must run before
+        // Vote is constructed, since Vote reads this once in its constructor.
+        afkProvider = new AfkProvider(getLogger());
+
         // Register vote
         vote = new Vote(this);
 
@@ -125,6 +131,10 @@ public class SkipNight extends JavaPlugin {
 
     public Messages getMessages() {
         return messages;
+    }
+
+    public AfkProvider getAfkProvider() {
+        return afkProvider;
     }
 
     public BukkitAudiences getPlatform() {
