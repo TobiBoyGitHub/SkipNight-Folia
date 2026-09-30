@@ -99,7 +99,7 @@ public abstract class VoteTest {
                 plain.serialize(player2.nextComponentMessage())
         );
         Assertions.assertEquals(
-                plain.serialize(plugin.getMessages().duringVote().voteButtons(voteTypeString)),
+                plain.serialize(plugin.getMessages().duringVote().voteButtons(voteTypeString, vote.voteTypeCommandString(voteType))),
                 plain.serialize(player2.nextComponentMessage())
         );
 
@@ -149,7 +149,7 @@ public abstract class VoteTest {
                 plain.serialize(player2.nextComponentMessage())
         );
         Assertions.assertEquals(
-                plain.serialize(plugin.getMessages().duringVote().voteButtons(voteTypeString)),
+                plain.serialize(plugin.getMessages().duringVote().voteButtons(voteTypeString, vote.voteTypeCommandString(voteType))),
                 plain.serialize(player2.nextComponentMessage())
         );
 

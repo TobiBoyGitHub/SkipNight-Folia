@@ -152,12 +152,12 @@ public class Messages {
                 Possible tags: <start_vote> = "Start Vote" button""")
         private String inBedNoVoteInProg = "Start a vote to skip the night? <blue><start_vote>";
 
-        public Component noVoteInProg(String voteType) {
+        public Component noVoteInProg(String commandVoteType) {
             return MiniMessage.miniMessage().deserialize(noVoteInProg,
                     Placeholder.component("start_vote",
                             Component.text("[" + startVote + "]", Style.style(TextDecoration.BOLD))
                                     .hoverEvent(HoverEvent.showText(MiniMessage.miniMessage().deserialize(clickToStartVote)))
-                                    .clickEvent(ClickEvent.runCommand("/skip" + voteType))));
+                                    .clickEvent(ClickEvent.runCommand("/skip" + commandVoteType))));
         }
 
         public Component inBedNoVoteInProg() {
@@ -283,18 +283,23 @@ public class Messages {
             return Messages.voteHeader().append(MiniMessage.miniMessage().deserialize(playerStartedVote, tagResolver).colorIfAbsent(NamedTextColor.WHITE));
         }
 
-        public Component voteButtons(String voteType) {
+        public Component voteButtons(String voteType, String commandVoteType) {
+            // voteType       = localized display string (e.g. "noc") - tooltip/text only.
+            // commandVoteType = fixed English command literal ("night"/"day") matching what
+            //                   SkipNightCommand/SkipDayCommand actually register with Cloud.
+            // These must stay separate: mixing them caused "/skipnoc yes" to be sent as
+            // unrecognized chat text once night-string/day-string were translated.
             String yes = lgeneral().yesString().substring(0, 1).toUpperCase() + lgeneral().yesString().substring(1);
             String no = lgeneral().noString().substring(0, 1).toUpperCase() + lgeneral().noString().substring(1);
             return Messages.hyphenHeader().append(MiniMessage.miniMessage().deserialize(pleaseVote).colorIfAbsent(NamedTextColor.WHITE))
                     .append(Component.text("[" + yes + "]", NamedTextColor.GREEN, TextDecoration.BOLD)
                         .hoverEvent(HoverEvent.showText(MiniMessage.miniMessage().deserialize(clickHereToVote,
                                 Placeholder.parsed("vote_value", lgeneral().yesString()))))
-                        .clickEvent(ClickEvent.runCommand("/skip" + voteType + " yes")))
+                        .clickEvent(ClickEvent.runCommand("/skip" + commandVoteType + " yes")))
                     .append(Component.text(" [" + no + "]", NamedTextColor.DARK_RED, TextDecoration.BOLD)
                         .hoverEvent(HoverEvent.showText(MiniMessage.miniMessage().deserialize(clickHereToVote,
                                 Placeholder.parsed("vote_value", lgeneral().noString()))))
-                        .clickEvent(ClickEvent.runCommand("/skip" + voteType + " no")));
+                        .clickEvent(ClickEvent.runCommand("/skip" + commandVoteType + " no")));
         }
 
         // You Voted
@@ -360,6 +365,14 @@ public class Messages {
 
         public Component leftWorld() {
             return Messages.voteHeader().append(MiniMessage.miniMessage().deserialize(leftWorld).colorIfAbsent(NamedTextColor.WHITE));
+        }
+
+        // AFK (EssentialsX)
+        @Comment("\nAppears if player goes AFK (EssentialsX) during a vote. AFK players are excluded from the vote entirely.")
+        private String afk = "You are <gray><bold>AFK</bold></gray>, you have been excluded from the vote.";
+
+        public Component afk() {
+            return Messages.voteHeader().append(MiniMessage.miniMessage().deserialize(afk).colorIfAbsent(NamedTextColor.WHITE));
         }
 
         // In Bed Vote Yes
